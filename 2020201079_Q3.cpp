@@ -104,11 +104,22 @@ void writeInFile(vector<ll> block,int blockNumber){
     std::ofstream outFile(outputFilePath);
     for (const auto &e : block) 
         outFile << e << "\n";
+    outFile.close();
 }
 
-int main(){
-    ifstream file("data\\input\\input1000000.txt");
-    partitionSize = 100000;
+int main(int argc, char *argv[]){
+    if(argc != 4){
+        cout<<argc;
+        cout<<" inputPath outputPath blockSize"<<endl;
+        exit(1);
+    }
+    string inputPath = argv[1];
+    //ifstream file("data\\input\\input1000000.txt");
+    ifstream file(inputPath);
+    //string finalOutputFile = "data\\output\\outputFinal.txt";
+    string finalOutputFile = argv[2];
+    //partitionSize = 100000;
+    partitionSize = stoi(argv[3]);
     string data = "";
     vector<ll> currBlock;
 
@@ -162,7 +173,7 @@ int main(){
     }
     //got all the first values in a vector now make them a heap
 
-    string finalOutputFile = "data\\output\\outputFinal.txt";
+    
     ofstream finalOutFile(finalOutputFile);
         
     auto h = MinHeap<pair<ll,int>>(firstFileValues);
@@ -180,6 +191,7 @@ int main(){
     for(int i=0;i<noOfFilesWritten;i++){
         auto f = sortedFiles[i];
         f->close();
+        free(sortedFiles[i]);
         string filePath = getOutputPathFromBlockNumber(i);
         remove(filePath.c_str());
     }
