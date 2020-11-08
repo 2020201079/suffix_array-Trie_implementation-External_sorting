@@ -3,6 +3,7 @@
 #include<vector>
 #include<string>
 #include<climits>
+#define ll long long int
 
 using namespace std;
 
@@ -80,20 +81,35 @@ vector<long long int> buildSuffixArray(std::string& input){
     return result;
 }
 
-long long int getLCP(string a,string b){
-    long long int count=0;
-    while(count<a.size() && count<b.size()){
-        if(a[count] == b[count]){
-            count++;
-        }
-        else{
-            break;
-        }
-    }
-    if(count == 0)
-        return INT_MIN;
-    return count;
+vector<long long int> getInvSuffix(vector<long long int>& suffixArray){
+    vector<long long int> result(suffixArray.size(),0);
+    for(int i=0;i<suffixArray.size();i++)
+        result[suffixArray[i]]=i;
+    return result;
 }
+
+vector<long long int> getLCP(string& input,vector<long long int> suffixArray){
+    vector<long long int> result(suffixArray.size(),0);
+
+    vector<long long int> invSuffixArray = getInvSuffix(suffixArray);
+
+    int k=0;
+    for(int i=0;i<suffixArray.size();i++){
+        if(invSuffixArray[i] == suffixArray.size()-1){ //
+            k=0;
+            continue;
+        }
+        int j = suffixArray[invSuffixArray[i]+1];
+        while(i+k<suffixArray.size() && j+k<suffixArray.size() && input[i+k]==input[j+k])
+            k++;
+        result[invSuffixArray[i]] = k;
+        if(k>0)
+            k--;
+    }
+    return result;
+}
+
+
 string reverseString(string& input){
     string result="";
     for(int i=input.size()-1;i>=0;i--){
@@ -102,29 +118,79 @@ string reverseString(string& input){
     return result;
 }
 
+// building segment tree for finding min
+void build(ll si,ll ss,ll se,vector<ll>& arr,vector<ll>& segmentTree){
+    if(ss==se){
+        segmentTree[si] = arr[ss];
+    }
+    else{
+        ll mid=(ss+se)/2;
+        build(si*2+1,ss,mid,arr,segmentTree);
+        build(si*2+2,mid+1,se,arr,segmentTree);
+        segmentTree[si] = min(segmentTree[si*2+1],segmentTree[si*2+2]);
+    }
+}
+
+ll getMin(ll si,ll ss,ll se,ll qs,ll qe,vector<ll>& segmentTree){
+    if(qs>se || qe<ss){ // no overlapping
+        return LLONG_MAX;
+    }
+    else if(ss>=qs && se<=qe){ //segment is inside query
+        return segmentTree[si];
+    }
+    else{ //semi overlap need to call on both children
+        int mid = (ss+se)/2;
+        return min(getMin(2*si+1,ss,mid,qs,qe,segmentTree),getMin(2*si+2,mid+1,se,qs,qe,segmentTree));
+    }
+}
+
 int main(){
     string input;
     cin>>input;
     long long int n=input.size();
     string reverseInput = reverseString(input);
     string modifiedInput = input+"#"+reverseInput;
+    //modifiedInput = "abrakadabra";
     cout<<"modified input : "<<modifiedInput<<endl;
 
     auto sa=buildSuffixArray(modifiedInput);
-    cout<<"suffix array :";
-    for(auto i:sa)
-        cout<<i<<" ";
-    cout<<endl;
 
-    long long int k;cin>>k;
+    auto lcp = getLCP(modifiedInput,sa);
 
-    long long int ans = INT_MIN;
-    for(long long int i=0;i<n-k+1;i++){
-        string a = input.substr(sa[i]);
-        string b = input.substr(sa[i+k-1]);
-        ans = max(getLCP(a,b),ans);
+    vector<ll> segmentTree(4*lcp.size());
+    
+    build(0,0,lcp.size()-1,lcp,segmentTree);
+
+    vector<long long int> invSuffixArray = getInvSuffix(sa);
+
+    //get even longest first
+    ll evenPalSize = LLONG_MIN;
+    for(ll i=1;i<n;i++){
+        ll otherStringIndex = (2*n)-(i-1);
+        ll saIndex1 = invSuffixArray[i];
+        ll saIndex2 = invSuffixArray[otherStringIndex];
+        if(saIndex1 > saIndex2){
+            ll temp =saIndex2;
+            saIndex2 = saIndex1;
+            saIndex1 = temp;
+        }
+        //cout<<"idx1: "<<saIndex1<<" idx2: "<<saIndex2<<" Min is "<<getMin(0,0,lcp.size()-1,saIndex1,saIndex2-1,//segmentTree)<<endl;
+        evenPalSize = max(getMin(0,0,lcp.size()-1,saIndex1,saIndex2-1,segmentTree),evenPalSize);
     }
-    if(ans == INT_MIN)
-        ans = -1;
-    cout<<"lenght of substring "<<ans<<endl;
+    cout<<"even max size : "<<(2*evenPalSize)<<endl;
+
+    ll oddPalSize = LLONG_MIN;
+    for(ll i=1;i<n;i++){
+        ll saIndex1 = invSuffixArray[i+1];
+        ll saIndex2 = invSuffixArray[(2*n)-(i-1)];
+        if(saIndex1 > saIndex2){
+            ll temp =saIndex2;
+            saIndex2 = saIndex1;
+            saIndex1 = temp;
+        }
+        oddPalSize = max(getMin(0,0,lcp.size()-1,saIndex1,saIndex2-1,segmentTree),oddPalSize);
+    }
+    cout<<"odd size : "<<(2*oddPalSize)+1<<endl;
+
+    cout<<"Max size is "<<max((2*oddPalSize)+1,(2*evenPalSize))<<endl;
 }
