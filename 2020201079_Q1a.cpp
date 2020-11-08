@@ -30,7 +30,7 @@ vector<long long int> buildSuffixArray(std::string& input){
         suffixes[i].index = i;
         suffixes[i].rank[0] = input[i] - 'a';
         if(i+1<n)
-            suffixes[i].rank[1] = input[i] - 'a';
+            suffixes[i].rank[1] = input[i+1] - 'a';
         else
             suffixes[i].rank[1] = -1;
     }
@@ -83,13 +83,17 @@ int main(){
     string input;
     cin>>input;
     long long int n=input.size();
-    auto sa=buildSuffixArray(input);
-    long long int minIndex = sa[0];
+    string inputDouble = input+input;
+    auto sa=buildSuffixArray(inputDouble);
+    for(int k:sa)
+        cout<<k<<" ";
+    cout<<endl;
+    long long int minIndex;
     for(long long int i=0;i<n;i++){
         if(sa[i] < n){
             minIndex = sa[i];
             break;
         }
     } 
-    cout<<input.substr(minIndex,n)<<endl;
+    cout<<inputDouble.substr(minIndex,n)<<endl;
 }
