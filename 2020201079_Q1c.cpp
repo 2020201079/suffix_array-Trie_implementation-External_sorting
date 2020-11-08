@@ -3,7 +3,6 @@
 #include<vector>
 #include<string>
 #include<climits>
-#define ll long long int
 
 using namespace std;
 
@@ -81,92 +80,51 @@ vector<long long int> buildSuffixArray(std::string& input){
     return result;
 }
 
-vector<long long int> getInvSuffix(vector<long long int>& suffixArray){
-    vector<long long int> result(suffixArray.size(),0);
-    for(int i=0;i<suffixArray.size();i++)
-        result[suffixArray[i]]=i;
-    return result;
-}
-
-vector<long long int> getLCP(string& input,vector<long long int> suffixArray){
-    vector<long long int> result(suffixArray.size(),0);
-
-    vector<long long int> invSuffixArray = getInvSuffix(suffixArray);
-
-    int k=0;
-    for(int i=0;i<suffixArray.size();i++){
-        if(invSuffixArray[i] == suffixArray.size()-1){ //
-            k=0;
-            continue;
+long long int getLCP(string a,string b){
+    long long int count=0;
+    while(count<a.size() && count<b.size()){
+        if(a[count] == b[count]){
+            count++;
         }
-        int j = suffixArray[invSuffixArray[i]+1];
-        while(i+k<suffixArray.size() && j+k<suffixArray.size() && input[i+k]==input[j+k])
-            k++;
-        result[invSuffixArray[i]] = k;
-        if(k>0)
-            k--;
+        else{
+            break;
+        }
+    }
+    if(count == 0)
+        return INT_MIN;
+    return count;
+}
+string reverseString(string& input){
+    string result="";
+    for(int i=input.size()-1;i>=0;i--){
+        result.push_back(input[i]);
     }
     return result;
-}
-
-// building segment tree for finding min
-void build(ll si,ll ss,ll se,vector<ll>& arr,vector<ll>& segmentTree){
-    if(ss==se){
-        segmentTree[si] = arr[ss];
-    }
-    else{
-        ll mid=(ss+se)/2;
-        build(si*2+1,ss,mid,arr,segmentTree);
-        build(si*2+2,mid+1,se,arr,segmentTree);
-        segmentTree[si] = min(segmentTree[si*2+1],segmentTree[si*2+2]);
-    }
-}
-
-ll getMin(ll si,ll ss,ll se,ll qs,ll qe,vector<ll>& segmentTree){
-    if(qs>se || qe<ss){ // no overlapping
-        return LLONG_MAX;
-    }
-    else if(ss>=qs && se<=qe){ //segment is inside query
-        return segmentTree[si];
-    }
-    else{ //semi overlap need to call on both children
-        int mid = (ss+se)/2;
-        return min(getMin(2*si+1,ss,mid,qs,qe,segmentTree),getMin(2*si+2,mid+1,se,qs,qe,segmentTree));
-    }
 }
 
 int main(){
     string input;
     cin>>input;
     long long int n=input.size();
-    auto sa=buildSuffixArray(input);
+    string reverseInput = reverseString(input);
+    string modifiedInput = input+"#"+reverseInput;
+    cout<<"modified input : "<<modifiedInput<<endl;
+
+    auto sa=buildSuffixArray(modifiedInput);
     cout<<"suffix array :";
     for(auto i:sa)
         cout<<i<<" ";
     cout<<endl;
 
-    auto lcp = getLCP(input,sa);
-    cout<<"lcp array :";
-    for(auto l:lcp)
-        cout<<l<<" ";
-    cout<<endl;
+    long long int k;cin>>k;
 
-    ll k;cin>>k;
-
-    if(k==1){
-        cout<<"Ans is : "<<n<<endl;
-        return 0;
+    long long int ans = INT_MIN;
+    for(long long int i=0;i<n-k+1;i++){
+        string a = input.substr(sa[i]);
+        string b = input.substr(sa[i+k-1]);
+        ans = max(getLCP(a,b),ans);
     }
-
-    vector<ll> segmentTree(4*n);
-    
-    build(0,0,n-1,lcp,segmentTree);
-
-    ll currMax = LLONG_MIN;
-    for(int l=0;l<n-k+1;l++){
-        int r = l+k-2;
-        cout<<"l : "<<l<<" r: "<<r<<" min: "<<getMin(0,0,n-1,l,r,segmentTree)<<endl;
-        currMax = max(currMax,getMin(0,0,n-1,l,r,segmentTree));
-    }
-    cout<<"Ans is :"<<currMax<<endl;
+    if(ans == INT_MIN)
+        ans = -1;
+    cout<<"lenght of substring "<<ans<<endl;
 }
